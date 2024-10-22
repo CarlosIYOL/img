@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CORPORATIVO IYOL</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #e3e3f4;
+        }
+        .tab {
+            background-color: #283593;
+            color: white;
+            padding: 30px 40px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .btn-new-folder {
+            background-color: #ff7043;
+            border: none;
+            color: white;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s ease;
+        }
+        .btn-new-folder:hover {
+            background-color: #d84315;
+        }
+    </style>
+</head>
+<body>
+    <div class="tab">
+        <h1>CORPORATIVO IYOL</h1>
+        <button class="btn-new-folder" onclick="createNewFolder()">Nueva Carpeta</button>
+    </div>
+
+    <script>
+        function createNewFolder() {
+            const folderName = prompt("Ingresa el nombre para la nueva carpeta:");
+            if (folderName) {
+                const newWindow = window.open("", "_blank");
+                newWindow.document.write(createCameraPage(folderName));
+                newWindow.document.close();
+            }
+        }
+
+        function createCameraPage(folderName) {
+            return `<!DOCTYPE html>
+            <html lang="es">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>${folderName}</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        margin: 0;
+                        padding: 20px;
+                        background-color: #f3f4f6;
+                        text-align: center;
+                    }
+                    button {
+                        background-color: #2196f3;
+                        color: white;
+                        padding: 15px 30px;
+                        border: none;
+                        border-radius: 5px;
+                        font-size: 16px;
+                        margin: 10px;
+                        cursor: pointer;
+                    }
+                    button:hover {
+                        background-color: #1976d2;
+                    }
+                    video, canvas {
+                        max-width: 100%;
+                        height: auto;
+                        border-radius: 10px;
+                        margin: 20px 0;
+                    }
+                </style>
+            </head>
+            <body>
+                <h1>${folderName}</h1>
+                <video id="video" autoplay playsinline></video>
+                <canvas id="canvas" style="display:none;"></canvas>
+                <audio id="shutterSound" src="camera-shutter-6305.mp3"></audio>
+                <br/>
+                <button onclick="takePhoto()">Tomar Foto</button>
+                <button onclick="closeWindow()">Finalizar</button>
+
+                <script>
+                    (function() {
+                        const video = document.getElementById('video');
+                        const canvas = document.getElementById('canvas');
+                        const context = canvas.getContext('2d');
+                        const shutterSound = document.getElementById('shutterSound');
+                        let photoCounter = 1;
+
+                        const constraints = {
+                            video: {
+                                width: { ideal: 1280 },
+                                height: { ideal: 720 },
+                                facingMode: 'environment'
+                            }
+                        };
+
+                        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                            navigator.mediaDevices.getUserMedia(constraints)
+                            .then(stream => {
+                                video.srcObject = stream;
+
+                                video.addEventListener('click', focusCamera);
+                            })
+                            .catch(err => {
+                                alert('Error al acceder a la cámara del dispositivo: ' + err);
+                                console.error(err);
+                            });
+                        } else {
+                            alert('getUserMedia no está soportado en este navegador.');
+                        }
+
+                        function focusCamera() {
+                            const tracks = video.srcObject.getVideoTracks();
+                            if (tracks.length > 0) {
+                                const track = tracks[0];
+                                const capabilities = track.getCapabilities();
+
+                                if (capabilities.focusDistance) {
+                                    track.applyConstraints({
+                                        advanced: [{ focusMode: 'manual', focusDistance: 0 }]
+                                    }).catch(err => console.error('Error al aplicar enfoque', err));
+                                } else {
+                                    console.log('El enfoque manual no es compatible con esta cámara.');
+                                }
+                            }
+                        }
+
+                        window.takePhoto = function() {
+                            const scaleFactor = 1;
+                            canvas.width = video.videoWidth * scaleFactor;
+                            canvas.height = video.videoHeight * scaleFactor;
+                            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                            shutterSound.play();
+                            const imageData = canvas.toDataURL('image/jpeg', 1.0);
+                            const a = document.createElement('a');
+                            a.href = imageData;
+                            a.download = \`${folderName}-\${photoCounter}.jpg\`;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            photoCounter++;
+                        };
+
+                        window.closeWindow = function() {
+                            if (video.srcObject) {
+                                video.srcObject.getTracks().forEach(track => track.stop());
+                            }
+                            window.close();
+                        };
+                    })();
+                <\/script>
+            </body>
+            </html>`;
+        }
+    </script>
+</body>
+</html>
